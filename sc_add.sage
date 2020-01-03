@@ -26,3 +26,13 @@ zero = reduce(lambda x, y: ADD(x, y), acc)
 
 print('Correctness: %s, additions: %s' % (zero, ADDER.ctr))
 
+# Enc oracle:
+for i in range(100):
+    x = G.random_element()
+    z = (a^-1) * x
+    acc = [base[i] for i in range(256) if (int(z) & 2**i) > 0]
+    xx = sum(acc)
+    if x-xx != 0:
+        raise ValueError('Error in enc oracle for a: %s' % x)
+
+
