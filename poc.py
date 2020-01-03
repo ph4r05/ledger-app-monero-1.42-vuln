@@ -174,7 +174,7 @@ class PoC:
 
 def main():
     dongle = getDongle(False)
-    poc = PoC(dongle, False)
+    poc = PoC(dongle, True)
     poc.poc()
 
 
