@@ -1,5 +1,5 @@
 # Ledger app Monero v1.42 PoC, spend key extraction
-# pip install ledgerblue monero_agent[tcry]
+# pip install ledgerblue monero_agent
 # @author: ph4r05
 
 import binascii
