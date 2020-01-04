@@ -148,7 +148,7 @@ class PoC:
         rsc = crypto.decodeint(r[0])
         asc = crypto.sc_sub(rsc, hs0)
         a = crypto.encodeint(asc)
-        print('  a:  %s' % binascii.hexlify(b))
+        print('  a:  %s' % binascii.hexlify(a))
 
         A = crypto.scalarmult_base(asc)
         print('  A:  %s' % binascii.hexlify(crypto.encodepoint(A)))
