@@ -50,17 +50,51 @@ def sc_sub_gcd(a, b):
 
 
 # Probability that two random numbers will be co-prime
-def coprime_prop(N=10000, comp_steps=False):
+def coprime_prop(N=10000, comp_steps=False, gres=1):
     cops = 0
     steps = 0
     for i in range(N):
         a1 = G.random_element()
         a2 = G.random_element()
-        if gcd(int(a1), int(a2)) == 1:
+        if gcd(int(a1), int(a2)) == gres:
             cops += 1
             if comp_steps:
                 r, s = sc_sub_gcd(a1, a2)
                 steps += s
 
     return cops/N, steps/cops
+
+
+def sc_sub_gcd_limit(a, b, limit=1):
+    c = 0
+    while a != b and min(a, b) > 0:
+        a, b = (a, b-a) if b > a else (a-b, b)
+        c += 1
+        if a < limit:
+            return a, b, c
+        if b < limit:
+            return b, a, c
+    return a, b, c
+
+
+def tabulated_sim(N=10000, tab_limit=1000000000):
+    cops = 0
+    steps = 0
+    lastn = 0
+    attmpts = []
+    for i in range(N):
+        a1 = G.random_element()
+        a2 = G.random_element()
+        g, g2, csteps = sc_sub_gcd_limit(a1, a2, tab_limit)
+        if g > tab_limit:
+            print('toob: ', g)
+            continue
+
+        attempt = i - lastn
+        cops += 1
+        steps += csteps
+        lastn = i
+        attmpts.append(attempt)
+
+    return cops / N, steps / cops, sum(attmpts)/len(attmpts)
 
