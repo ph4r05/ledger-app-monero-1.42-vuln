@@ -235,8 +235,7 @@ class PoC:
         r = self.mlsag_sign_s(P, sp)
         print('  5.   r:  %s' % (binascii.hexlify(r[0]),))
 
-        # Extract.
-        # 5. compute b: `b = r - H_s(D || varint(0))`
+        # Extract the spend key
         hs0 = crypto.hash_to_scalar(bytearray(A8x) + bytearray(1))
         rsc = crypto.decodeint(r[0])
         rsc = crypto.sc_sub(rsc, hs0)
