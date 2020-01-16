@@ -231,7 +231,7 @@ class PoC:
         print('  4.   c:  %s' % (binascii.hexlify(c),))
 
         # 5. mlsag_sign(s1, enc(P)), r1 = enc(s1 - Pc) = enc(Hs(P||0) + s - Pc);
-        # once decrypted, we have Hs(P||0) + s - Pc -> s
+        # We have R = Hs(P||0) + s - Pc -> R - Hs(P||0) + Pc = s
         r = self.mlsag_sign_s(P, sp)
         print('  5.   r:  %s' % (binascii.hexlify(r[0]),))
 
