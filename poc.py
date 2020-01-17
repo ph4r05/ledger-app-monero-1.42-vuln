@@ -8,7 +8,7 @@ from ledgerblue.commException import CommException
 from monero_glue.xmr import crypto
 from monero_glue.xmr.sub import addr, xmr_net
 
-MONERO_VER = b'0.15.0.0'
+MONERO_VER = b'0.15.0.1'
 
 # binascii.hexlify(crypto.encodepoint(crypto.scalarmult_base(crypto.sc_init(1))))
 PT_BASE = binascii.unhexlify(b'5866666666666666666666666666666666666666666666666666666666666666')
