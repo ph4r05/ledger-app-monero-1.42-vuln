@@ -349,3 +349,5 @@ Dusan Klinec (ph4r05)
 - contact: ph4r05 -at- gmail.com
 - GPG ID: CCBCE103
 - GPG fingerprint: AB35 9D7F B6BF B9AA 542C EAAB 6337 E118 CCBC E103
+
+Created 17. Jan, 2020 in Brno, Czech Republic.
