@@ -213,9 +213,10 @@ Notice that if `alpha` is allowed to be used more than once, we have a decryptio
 - `mlsag_sign(alpha1, xx1) = r1`
 - `mlsag_sign(alpha1, xx2) = r2`
 - `r1 - r2 = (alpha1 - c*xx1) - (alpha1 - c*xx2) = alpha1 - c*xx1 - alpha1 + c*xx2 = c*(xx2-xx1)`
-- as `c` is known, attacker can recover `xx2-xx1`. If attacker knows plaintext value for one scalar secret, 
+- As `c` is known, attacker can recover `xx2-xx1`. If attacker knows plaintext value for one scalar secret, 
 let say `xx1` he can recover scalar value for `xx2`.
-- `xx1` can be constructed by calling `monero_apdu_derive_secret_key(deriv, idx, a)` as we usually know `a` as it was exported to the client
+- `xx1` can be constructed by calling `monero_apdu_derive_secret_key(deriv, idx, a)` as we usually know `a` as it was exported to the client.
+- Similarly, if `xx1` is known, then `alpha = r1 -c*xx1`.
 - We do not consider type confusion and other attacks as those are eliminated by key hierarchy.
 
 Monero currently uses only the `MLSAG_SIMPLE` signature scheme. The `MLSAG_FULL` is not needed with Bulletproof transactions
