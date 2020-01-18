@@ -18,7 +18,7 @@ avoid.
 ### Notation 
 - `x_m` corresponds to `x || hmac(x)`, thus message plus its HMAC, for brevity.
 - `x_{scalar}` is value `x` decoded as a scalar value.
-- `H()` is a Keccak3 hash function, as used in Monero.
+- `H()` is a Keccak hash function, as used in Monero.
 - `x || y` represents a binary concatenation of `x` and `y`.
   
   
