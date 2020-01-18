@@ -10,8 +10,8 @@ The new protocol contains following fixes:
 - `sc_sub`, `sc_add` removed
 - `get_subaddress_secret_key_with_ephemeral` added
 
-The new vulnerability uses smaller set of provided API functions, 
-requires less assumptions and uses the provided functions very similarly 
+The new vulnerability uses a smaller set of provided API functions, 
+requires fewer assumptions and uses the provided functions very similarly 
 to the original Monero codebase client, which makes it difficult to 
 avoid.
 
@@ -44,16 +44,16 @@ avoid.
 
 ### Notes
 - Step 2 for searching `x` meeting the criteria is for convenience so we can 
-obtain encrypted form of a known value, usable both as Point and also as a scalar. 
+obtain an encrypted form of a known value, usable both as Point and also as a scalar. 
 We could use `x=1`, but the modular reduction in the last step in `mlsag_sign`
-would change `c*P_{scalar}` value and we would need to correct the final result a bit.
+would change `c*P_{scalar}` value, and we would need to correct the final result a bit.
 Moreover, it is better to supply already reduced scalars as non-reduced scalars could 
 be rejected by additional countermeasures, thwarting the attack vector
 
 - According to the numerical simulation, the `E[steps_finding_x(A)] = 15`, i.e., 
 on average in 15 steps we find suitable `x` value. 
 
-- The attack uses only small set of functions, all function calls besides the last one `mlsag_sign()`
+- The attack uses an only small set of functions, all function calls besides the last one `mlsag_sign()`
 are legit and could appear in the normal transaction construction process. It is thus hard to prevent
 this from working. 
 
@@ -74,48 +74,48 @@ mlsag_sign()
 ## Requirements
 
 - Connected Ledger, entered PIN, selected Monero app.
-    - Usually when sending transaction, setting up the Monero wallet.
-    - If master view key was not exported, then the scenario happens with each blockchain scanning.
+    - Usually when sending a transaction, setting up the Monero wallet.
+    - If the master view key was not exported, then the scenario happens with each blockchain scanning.
 
 ## Impact
 
 - No user confirmation is required to mount the attack.
-- User is not notified about transaction being in progress, no error is shown, display does not change.
-- User has no chance to notice his master spend key was extracted.
-- PoC works for updated Ledger monero app. The exploitation is possible from the initial
+- The user is not notified about the transaction being in progress. No error is shown. The display does not change.
+- The user has no chance to notice his master spend key was extracted.
+- PoC works for the updated Ledger Monero app. The exploitation is possible from the initial
 protocol deployment date. User spend keys could have been silently exfiltrated without users knowing.
 There is no way to tell whether this attack was executed in the wild. 
-- Existing spend keys should be thus considered leaked and not secure to use.
-- Ledger monero app currently does not support changing the BIP-44 derivation path for 
+- Existing spend keys should thus be considered leaked and not secure to use.
+- Ledger Monero app currently does not support changing the BIP-44 derivation path for 
 Monero master key derivation, thus users are currently not able to use Ledger to store Monero securely
 if they used it with the Monero before.
 
 ## Observations
 
 - Scalars / points can be used interchangeably in the protocol. This *type confusion* 
-is a significant vulnerability. Especially when attacker manages to obtain known 
-plaintext-ciphertext pair, that can be then later used in both contexts (scalar, point).
-Knowing the plaintext value is important for computation of `Hs(P||0)` and `c*P` elimination.
+is a significant vulnerability. Especially when the attacker manages to obtain known 
+plaintext-ciphertext pair, which can then later be used in both contexts (scalar, point).
+Knowing the plaintext value is important for the computation of `Hs(P||0)` and `c*P` elimination.
 
 - When the view key is extracted (for faster blockchain scanning), the plaintext-ciphertext
-pair cannot be prevented for scalars, as attacker knows `a` and can use `a_placeholder` to make
-Ledger compute scalars with `a`. E.g., `monero_apdu_derive_secret_key(deriv, idx, a)` can be 
+pair cannot be prevented for scalars, as the attacker knows `a` and can use `a_placeholder` to make
+Ledger computes scalars with `a`. E.g., `monero_apdu_derive_secret_key(deriv, idx, a)` can be 
 used to construct scalar plaintext-ciphertext pair. 
  
-- `mlsag_sign` is important for all attacks as it returns unencrypted scalar value from
-originally encrypted scalar inputs. It is used as an decryption oracle.
+- `mlsag_sign` is important for all attacks as it returns an unencrypted scalar value from
+originally encrypted scalar inputs. It is used as a decryption oracle.
 
 
 # Countermeasures
 
-To make the protocol secure against mentioned family of attacks the aforementioned 
+To make the protocol secure against the mentioned family of attacks the aforementioned 
 weak spots have to be eliminated.
 
 
 ## Remove simple scalar functions
 
 As correctly proposed by the Ledger, removing `sc_sub()` and `sc_add()` helps significantly. 
-As demonstrated in the previous report, attacker can construct many usable scalar values that
+As demonstrated in the previous report, the attacker can construct many usable scalar values that
 can be later used in the attack. 
 
 Note that `sc_sub()` can be emulated just with `sc_add()` as it holds that:
@@ -129,50 +129,50 @@ add basis elements to obtain `(l-1)*x` by adding bases from the binary represent
 
 ## User confirmation / notification
 
-- As HMAC key is changed with each new transaction, the user should be 
+- As the HMAC key is changed with each new transaction, the user should be 
 explicitly asked to confirm the transaction signing process once `open_tx()` is called 
-in the real transaction mode. I.e., Ledger should ask user whether he wants to continue
-with the transaction signature. User confirms by pressing a button. 
+in the real transaction mode. I.e., Ledger should ask the user whether he wants to continue
+with the transaction signature. The user confirms by pressing a button. 
 
 - User confirmation is required to mount any attack. Attack surface is thus reduced 
-to the point when user is actively sending a new transaction, the time window is 
+to the point when the user is actively sending a new transaction, the time window is 
 significantly reduced.
 
 - Ledger should display information on the display when `open_tx` was called, even for fake
-transactions. Any display change would be nice so user is able to notice that Ledger is
+transactions. Any display change would be nice, so the user is able to notice that Ledger is
 performing some tasks. 
 
-- When transaction is finished with error (e.g., some security assertion fails), user should be 
+- When the transaction is finished with error (e.g., some security assertion fails), user should be 
 notified on the screen and optionally asked for confirmation to continue in a normal 
-operation, so attacker cannot just flash the error message over short period of time
+operation. The attacker thus cannot just flash the error message over short period of time
 without user noticing. 
 
 - Some other attacks we considered require more transaction openings so limiting it 
-by requiring a confirmation decreases the attack surface significantly.
+by requiring the confirmation lowers the attack surface significantly.
 
 
 ## Proper input validation
 
 - Not sure if this is performed in the current version, better check it.
-- Each EC point should be verified it lies on the ED25519 curve.
+- Each EC point should be verified that it lies on the ED25519 curve.
     - After each decryption, if it is not already checked in every EC operation.
-- Each scalar should be checked if is reduced. 
-- If any assertion fails, abort transaction, reset keys, notify user and ask for confirmation to continue.
-- Scalar values should not be `0`.
-- Stronger requirement: if assertion fails, ask for PIN re-entry.
+- Each scalar should be checked if it is reduced.
+- Scalar values should not be `0`. 
+- If any assertion fails, abort the transaction, reset keys, notify the user and ask for confirmation to continue.
+- Stronger requirement: if the assertion fails, ask for PIN re-entry.
 
 
 ## Symmetric key hierarchy
 
 This is the primary countermeasure that blocks all attacks we considered. 
-For sake of simplicity, we will assume just HMAC keys for now and address `spk` key later.
+For the sake of simplicity, we will assume just HMAC keys for now and address `spk` key later.
 
-- The HMAC key is changed with each new transaction (as now), let call it `khm`, i.e., master hmac key
+- The HMAC key is changed with each new transaction (as now), let call it `khm`, i.e., the master hmac key
 - HMAC key used for particular parameters is derived from `khm` based on the following
    - Value type, scalar / point
    - Content type, derived secret / random mask
    - Function calling context. e.g., some scalars are accepted only in some functions.
-- Encrypted values are thus usable only in particular context, i.e., the context with the same HMAC key.
+- Encrypted values are thus usable only in a particular context, i.e., the context with the same HMAC key.
 - This also prevents the *type confusion*.  
    
 Example:
@@ -184,20 +184,20 @@ Example:
 Other EC points than derivations are not exported in an encrypted form in the protocol. 
 If there are more EC point types later, differentiate them.
 
-Ideally, the encryption key should be also changed with each new transaction (random), if possible. 
-Definitely for values we are sure were produced after `open_tx()`. Thorough protocol analysis
+Ideally, the encryption key should also be changed with each new transaction (random), if possible. 
+Definitely, for values we are sure were produced after `open_tx()`. Thorough protocol analysis
 or just simple testing will reveal which values need to have fixed `spk` key.
-Starting with version the encryption key `spk` is randomly generated after `open_tx()`.
+We would suggest to start testing this improvement with the encryption key `spk` being randomly generated after `open_tx()`.
 After transaction finish/abort the key is reverted back to static `spk`. 
 
 Different encryption key strictly limits attacker to the scope of one transaction with respect 
 to the data confidentiality, which is useful for security arguments. I.e., no long-term analysis 
 and data collection can be performed.
 
-The specified HMAC key hierarchy is usable also for encryption, which decreases the attack surface 
-significantly as values are valid only in particular context. This is especially important as the 
-initialization vector is zero = encryption has no semantic security, i.e., same plaintexts encrypt
-to the same ciphertexts. This allows attacker to test values for equality without knowing the plaintext values.
+The specified HMAC key hierarchy is also usable for encryption, which decreases the attack surface 
+significantly as values are valid only in a particular context. This is especially important as the 
+initialization vector (IV) is zero = encryption has no semantic security, i.e., same plaintexts encrypt
+to the same ciphertexts. The zero IV allows the attacker to test values for equality without knowing the plaintext values.
 
 The key hierarchy significantly restricts the potential combinations attacker can use,
 restricting to explicitly allowing ones by the protocol designer.
@@ -219,7 +219,7 @@ let say `xx1` he can recover scalar value for `xx2`.
 - We do not consider type confusion and other attacks as those are eliminated by key hierarchy.
 
 Monero currently uses only the `MLSAG_SIMPLE` signature scheme. The `MLSAG_FULL` is not needed with Bulletproof transactions
-and thus Ledger does not have to support it. This reduces the attack surface and simplifies countermeasures design. 
+and thus, Ledger does not have to support it. This reduces the attack surface and simplifies countermeasures design. 
 Thus it holds that `mlsag_prepare()` is called only once per signature (for non-multisig transaction),
 followed by exactly one `mlsag_sign()` call (it holds `dsRows==1`).
 
@@ -232,77 +232,79 @@ This guarantees that only `alpha` generated by the `mlsag_prepare()` can be pass
 as the first `alpha` parameter. Separation of `alpha` and `xx` domains via different keys restricts the 
 attack surface.
 
-It is easy to show that if `alpha` is a random scalar, then attacker can derive no information about `xx1`
-from `alpha - c*xx1`. It is essential that `alpha` can be used only once. Otherwise attacker can eliminate it.
-The reason is that the `alpha` scalar could be generated only in `mlsag_prepare()` and 
+It is easy to show that if `alpha` is a random scalar, then the attacker can derive no information about `xx1`
+from `alpha - c*xx1`. The reason is that `alpha` can be generated only in `mlsag_prepare()` and 
 used only in `mlsag_sign()` as a first parameter, nowhere else.
+It is essential that `alpha` can be used only once as input to the `mlsag_sign()`. 
+Otherwise, the attacker can eliminate it.
  
-Thus attacker can derive no information about `alpha` using other functions than `mlsag_sign()` as it fails
-HMAC check in those. Attacker could learn `alpha` if he knows decryption of `xx1`, but such `alpha` is just a 
-random scalar and this knowledge cannot be reused in another `mlsag_sign()` call, making the knowledge useless.   
+Thus the attacker can derive no information about `alpha` using other functions than `mlsag_sign()` as it fails
+HMAC check in those. The attacker could learn `alpha` if he knows decryption of `xx1`, but such `alpha` is just a 
+random scalar, and this knowledge cannot be reused in another `mlsag_sign()` call, making the knowledge useless.   
 
-This countermeasure likely breaks multisig compatibility as `alpha[i] = kLRki->k;` for multisig.
+This countermeasure likely breaks the multisig compatibility as `alpha[i] = kLRki->k;` for multisig.
 However, if alpha reuse is possible the `mlsag_sign()` can be used as decryption oracle 
 and this cannot be simply prevented as the result of the `mlsag_sign()` directly appears in
 the transaction signature. 
 
-I am not sure whether multisig is currently supported. If yes, there is a separate analysis required 
-to study how to do multisig support securely. 
+We are not sure whether the multisig is currently supported. If yes, there is a separate analysis required 
+to study how to do the multisig support securely. 
 
 
 ## Strict state model checking
 
-Due to low-level nature of the API functions, it is very hard to explicitly capture the 
-state model as the function call flow highly depends on the transaction being signed, 
-i.e., number of inputs, outputs, use of sub-addresses, UTXO types - aux keys used, etc...
+Due to the low-level nature of the API functions, it is difficult to capture the 
+explicit state model as the function call flow highly depends on the transaction being signed, 
+i.e., a number of inputs, outputs, use of sub-addresses, UTXO types - aux keys used, etc...
 
-However, the more the state model is restricted the lesser is the attacker space.
+However, the more the state model is restricted, the lesser is the attacker space.
 It is recommended to study the valid transaction construction paths and enforce obvious state transitions.
 
-E.g., commit to the {mixin, number of UTXO, number of transaction outputs} in the initial `open_tx()` call.
-Then enforce the rule that number of calls to `mlsag_prepare()` and `mlsag_sign()` has to be 
-equal to the number of `UTXO` (as we have one signature per UTXO).
+For instance, enforce a rule that the `mlsag_prepare()` has to be followed exactly by the `mlsag_hash()` 
+(several times, depends on mixin, not critical to enforce number of the `mlsag_hash()` calls).
+Enforce that the `mlsag_sign()` can be called only after the `mlsag_hash()` and only once per `mlsag_prepare()`.
+Ideally if the `mlsag_sign()` increments the `sign_counter` as well after it computes the `ss` result, 
+to enforce state change, which prevents malicious state transitions.
 
-Similarly, enforce `mlsag_prepare()` has to be followed exactly by `mlsag_hash()` 
-(several times, depends on mixin, not critical to enforce number of `mlsag_hash()` calls).
-Enforce that `mlsag_sign()` can be called only after `mlsag_hash()` and only once per `mlsag_prepare()`.
-Ideally if `mlsag_sign()` increments `sign_counter` as well after it computes the `ss` result, 
-to enforce state change which prevents malicious state transitions.
+Client change:
+Commit to the {mixin, number of UTXO, number of transaction outputs} in the initial `open_tx()` call.
+Then enforce the rule that number of calls to the `mlsag_prepare()` and `mlsag_sign()` has to be 
+equal to the number of `UTXO` (as we have one signature per UTXO).
 
 Note the basic state model enforcement can be done without changing the client. 
 However, the more precise check requires to commit to the number of transaction inputs. 
 
 ## Conclusion
 
-All aforementioned fixes are directly applicable on the Ledger side without need to touch the Monero codebase.
+All aforementioned fixes are directly applicable on the Ledger side without the need to touch the Monero codebase.
 The mentioned changes fix the whole family of attacks similar to those presented and effectively blocks 
 the main attack vectors and leaks.
 
-It is thus possible to fix the critical vulnerability without need to release new Monero client version, 
+It is thus possible to fix the critical vulnerability without need to release a new Monero client version, 
 which significantly speeds up the patch roll-out. 
 
 # Client-changing countermeasures
 
-Here follows the measures that require client modifications to work.
-They improve the security significantly but are not necessary to block the vulnerability. 
+Here follow the measures that require client modifications to work.
+They improve security significantly but are not necessary to block the vulnerability. 
 
 ## Encrypt-then-reveal
 
-We propose not to return plaintext values from `mlsag_sign()` directly, but to return an encrypted versions,
-under new, transaction specific encryption key `kse`, which is used specifically for this purpose.
+We propose not to return plaintext values from `mlsag_sign()` directly, but to return encrypted versions,
+under a new, transaction-specific encryption key `kse`, which is used specifically for this purpose.
 
 After the transaction is successfully constructed, i.e., no security assertion was violated, the Ledger
 returns the `kse` to the host client so it can decrypt the MLSAG signature. 
 
-This countermeasure strictly enforces correct state transitions and blocks attacker reactivity.
-I.e., attacker cannot use results from previous `mlsag_sign()` calls to adapt attacking strategy
-as he learns the result only after protocol finishes successfully. This property is important for 
+This countermeasure strictly enforces correct state transitions and blocks the attacker's reactivity.
+I.e., the attacker cannot use results from the previous `mlsag_sign()` calls to adapt an attacking strategy
+as he learns the result only after the protocol finishes successfully. This property is important for 
 security proofs and to strictly guard the potential attacker space.
 
 This change is very easy to implement and brings significant security benefits.
 However, it requires minor client code change. 
 
-We recommend to use this measure with the new Ledger monero protocol version.
+We recommend using this measure with a new Ledger Monero protocol version.
 After some time (all users migrate to new Monero clients enforcing new signing protocol) the support
 for unencrypted `mlsag_sign()` can be dropped. 
 
@@ -313,23 +315,23 @@ Allow user to specify BIP derivation path (or its part) when creating the wallet
 device to allow multiple cryptographically separated master (view, spend) keys derived from the seed.
 
 Currently, it is fixed, to the best of our knowledge.
-Having fixed derivation paths blocks user from using new set of keys with the same device seed.
+Having fixed derivation paths blocks the user from using a new set of keys with the same device seed.
 
 For example, each user should consider current master keys leaked and dangerous to use. 
-He cannot then use the Ledger device without seed reset, which affects all other apps on the 
+He cannot then use Ledger device without seed reset, which affects all other apps on the 
 Ledger, i.e., the Bitcoin app. 
 
 With the fixed path user also cannot transfer all funds to another safe address without using
 software wallet (risk of spend key leak) or another Ledger device (lack of resources, need to buy new Ledger).
 
-If the user can specify another path the migration to a safe (non-leaked) account is simple.
-User creates another wallet with different path and sweeps old account to the new one. 
+If the user can specify another path, the migration to a safe (non-leaked) account is simple.
+The user creates another wallet with a different path and sweeps the old account to the new one. 
 
 
 ## Strict state model checking
 
 As mentioned in the similarly named section above, the more precise checking can be done if
-the `open_tx()` transaction message contains information about mixin, number of UTXOs and transaction outputs.
+the `open_tx()` transaction message contains information about mixin, number of UTXOs, and transaction outputs.
 
 
 # Recommendations
@@ -338,7 +340,7 @@ the `open_tx()` transaction message contains information about mixin, number of 
 that there is no way to tell whether that happened or not.
 
 - The users should consider existing keys leaked and transfer the funds to a secure location
-(a bit tricky if they dont posess another unused Ledger). 
+(a bit tricky if they don't possess another unused Ledger). 
 You have to assess the risk of waiting for Monero client to support multiple paths or to 
 find another solution. 
 
@@ -350,4 +352,4 @@ Dusan Klinec (ph4r05)
 - GPG ID: CCBCE103
 - GPG fingerprint: AB35 9D7F B6BF B9AA 542C EAAB 6337 E118 CCBC E103
 
-Created 17. Jan, 2020 in Brno, Czech Republic.
+Created 18. Jan, 2020 in Brno, Czech Republic.
