@@ -33,12 +33,12 @@ avoid.
      - This is performed off-line, in the PoC, card interaction is not required as we have `A`
 - Call `monero_apdu_generate_key_derivation(x*G, a_placeholder)` to obtain `{enc(8*a*(x*G))_m} = {enc(P)_m}`
      - We thus know `{P, enc(P)_m}`, i.e., plaintext-ciphertext pair
-- Call `monero_apdu_derive_secret_key(enc(P)_m, 0, s)` to get `se = enc(Hs(P||0) + s)_m`
+- Call `monero_apdu_derive_secret_key(enc(P)_m, 0, b_placeholder)` to get `se = enc(Hs(P||0) + b)_m`
 - Call `mlsag_hash(p2=1, opt=0x80)` to get `c` in plaintext.
 - Call `mlsag_sign(se, enc(P)_m)`
      - We obtain `r = se - c*P = se - c*(8*x*a*G)_{scalar}`
      - Note the `P` is now decoded as a scalar value
-     - Compute the master spending key `s` as `s = r - Hs(P||0) + c*P_{scalar}`
+     - Compute the master spending key `b` as `b = r - Hs(P||0) + c*P_{scalar}`
      - We can compute `Hs(P||0)` as `P` plaintext value is known.
 
 
@@ -216,7 +216,7 @@ Notice that if `alpha` is allowed to be used more than once, we have a decryptio
 - As `c` is known, attacker can recover `xx2-xx1`. If attacker knows plaintext value for one scalar secret, 
 let say `xx1` he can recover scalar value for `xx2`.
 - `xx1` can be constructed by calling `monero_apdu_derive_secret_key(deriv, idx, a)` as we usually know `a` as it was exported to the client.
-- Similarly, if `xx1` is known, then `alpha = r1 -c*xx1`.
+- Similarly, if `xx1` is known, then `alpha = r1 - c*xx1`.
 - We do not consider type confusion and other attacks as those are eliminated by key hierarchy.
 
 Monero currently uses only the `MLSAG_SIMPLE` signature scheme. The `MLSAG_FULL` is not needed with Bulletproof transactions
