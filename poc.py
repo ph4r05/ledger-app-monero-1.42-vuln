@@ -1,4 +1,4 @@
-# Ledger app Monero v1.42 PoC, spend key extraction
+# Ledger app Monero v1.4.2 PoC, spend key extraction
 # pip install ledgerblue monero_agent
 # @author: ph4r05
 
@@ -112,7 +112,7 @@ class PoC:
         return r[:32]
 
     def poc(self):
-        print('[+] PoC Ledger-app-Monero 1.42 spend key extraction')
+        print('[+] PoC Ledger-app-Monero 1.4.2 spend key extraction')
         self.reset()
         self.set_mode()
         self.open_tx()
@@ -203,7 +203,7 @@ class PoC:
         raise ValueError('Could not find a confusion parameter!')
 
     def poc2(self):
-        print('[+] PoC Ledger-app-Monero 1.42 spend key extraction, v2')
+        print('[+] PoC Ledger-app-Monero 1.4.2 spend key extraction, v2')
         self.reset()
         self.set_mode()
         self.open_tx()
